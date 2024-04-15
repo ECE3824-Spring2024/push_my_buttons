@@ -1,1 +1,1 @@
-React Frontend (w/ Chart.js for interactive graphs)
+# React Frontend (w/ Chart.js for interactive graphs)
