@@ -6,3 +6,13 @@ Username:
 
 Password:
   mJxWBQYqdbSipoLAcc59qUN1zPQdDMmD
+
+Python connect
+
+import redis
+
+r = redis.Redis(
+  host='redis-12305.c270.us-east-1-3.ec2.cloud.redislabs.com',
+  port=12305,
+  password='mJxWBQYqdbSipoLAcc59qUN1zPQdDMmD')
+
