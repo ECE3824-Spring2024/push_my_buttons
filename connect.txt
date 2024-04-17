@@ -1,0 +1,8 @@
+Public endpoint:
+  redis-12305.c270.us-east-1-3.ec2.cloud.redislabs.com:12305
+
+Username:
+  default
+
+Password:
+  mJxWBQYqdbSipoLAcc59qUN1zPQdDMmD
