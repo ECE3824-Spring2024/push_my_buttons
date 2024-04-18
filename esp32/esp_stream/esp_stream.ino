@@ -9,6 +9,13 @@
 #endif
 #endif
 
+#define buttonA 4
+#define buttonB 5
+#define LED 2
+#define dlay 500
+#define bounce 150
+
+
 #define WIFI_SSID "Vandaley Industries"
 #define WIFI_PASSWORD "15Tattergrace48"
 
@@ -25,33 +32,23 @@
 #define STREAMS_KEY "A-stream"
 #define STREAMS_GROUP_1 "button"
 
-#define VALIDATE_VECTOR_STRING_RESULT(result, command) \
-  result = command; \
-  if(redis->isErrorReturn(result)) { \
-    Serial.println(">> This was an error <<"); \
-    Serial.println(result[0]); \
-  } else { \
-    Serial.println(">> Success <<"); \
-    print_vector(result); \
-  }
+bool buttonStateA = 0;
+bool buttonStateB = 0;
+int aCount = 0;
+int bCount =0;
 
-  void setup()
-{
-  Serial.begin(115200);
-  Serial.println();
+// #define VALIDATE_VECTOR_STRING_RESULT(result, command) \
+//   result = command; \
+//   if(redis->isErrorReturn(result)) { \
+//     Serial.println(">> This was an error <<"); \
+//     Serial.println(result[0]); \
+//   } else { \
+//     Serial.println(">> Success <<"); \
+//     print_vector(result); \
+//   }
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.print("Connecting to the WiFi");
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(250);
-    Serial.print(".");
-  }
-  Serial.println();
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
 
+void redisXadd(char* but){
   WiFiClient redisConn;
   if (!redisConn.connect(REDIS_ADDR, REDIS_PORT))
   {
@@ -70,15 +67,42 @@
       Serial.printf("Failed to authenticate to the Redis server! Errno: %d\n", (int)connRet);
       return;
   }
+    aCount= redis.get("A").toInt();
+    aCount++;
+    String newValue = String(aCount);
+    redis.set("A", newValue.c_str());
 
-
-    redis.xadd(STREAMS_KEY, "*", STREAMS_GROUP_1, "A");
+    redis.xadd(STREAMS_KEY, "*", STREAMS_GROUP_1, but);
 
   // close connection
   redisConn.stop();
   Serial.print("Connection closed!");
 }
 
+  void setup()
+{
+  Serial.begin(115200);
+  Serial.println();
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to the WiFi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(250);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  redisXadd("A");
+}
+
 void loop(){
+
+
+
+
 
 }
