@@ -3,5 +3,5 @@
     "board": "esp32:esp32:esp32",
     "port": "COM10",
     "programmer": "esptool",
-    "sketch": "Survey_Button_Orig\\Survey_Button_Orig.ino"
+    "sketch": "esp32\\esp_stream\\esp_stream.ino"
 }
