@@ -70,10 +70,18 @@ void redisXadd(char* but){
       Serial.printf("Failed to authenticate to the Redis server! Errno: %d\n", (int)connRet);
       return;
   }
-    aCount= redis.get(but).toInt();
-    aCount++;
-    String newValue = String(aCount);
-    redis.set("A", newValue.c_str());
+    if(but == "A"){
+      aCount= redis.get(but).toInt();
+      aCount++;
+      String newValue = String(aCount);
+      redis.set("A", newValue.c_str());
+    }
+    else{
+      bCount= redis.get(but).toInt();
+      bCount++;
+      String newValue = String(bCount);
+      redis.set("B", newValue.c_str());
+    }
 
     redis.xadd(STREAMS_KEY, "*", STREAMS_GROUP_1, but);
 
@@ -112,9 +120,20 @@ void redisXadd(char* but){
 }
 
 void loop(){
+buttonStateA = digitalRead(buttonA);
+buttonStateB = digitalRead(buttonB);
 
+if( buttonStateA == HIGH){
+  delay(bounce);
+  redisXadd("A");
+  blink(LED, 500);
+}
 
-
+if( buttonStateB == HIGH){
+  delay(bounce);
+  redisXadd("B");
+  blink(LED, 1000);
+}
 
 
 }
