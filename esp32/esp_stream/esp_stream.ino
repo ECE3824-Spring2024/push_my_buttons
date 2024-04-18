@@ -11,6 +11,7 @@
 
 #define buttonA 4
 #define buttonB 5
+#define LED 2
 #define bounce 150
 
 
@@ -44,7 +45,7 @@ int bCount =0;
 //     Serial.println(">> Success <<"); \
 //     print_vector(result); \
 //   }
-void blink(int LED, int dlay){
+void blink(int led, int dlay){
         digitalWrite(LED, HIGH);
         delay(dlay);
         digitalWrite(LED, LOW);
@@ -86,6 +87,11 @@ void redisXadd(char* but){
   Serial.begin(115200);
   Serial.println();
 
+  pinMode(LED, OUTPUT);
+  pinMode(buttonA, INPUT);
+  pinMode(buttonB, INPUT);
+
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to the WiFi");
@@ -98,6 +104,10 @@ void redisXadd(char* but){
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
+  for(int i = 0 ; i < 5 ; i++){
+    blink(2,150);
+    delay(100);
+  }
   // redisXadd("A");
 }
 
