@@ -67,7 +67,7 @@ void redisXadd(char* but){
       Serial.printf("Failed to authenticate to the Redis server! Errno: %d\n", (int)connRet);
       return;
   }
-    aCount= redis.get("A").toInt();
+    aCount= redis.get(but).toInt();
     aCount++;
     String newValue = String(aCount);
     redis.set("A", newValue.c_str());
