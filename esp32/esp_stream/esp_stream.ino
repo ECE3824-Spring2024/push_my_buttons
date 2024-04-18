@@ -11,8 +11,6 @@
 
 #define buttonA 4
 #define buttonB 5
-#define LED 2
-#define dlay 500
 #define bounce 150
 
 
@@ -46,7 +44,11 @@ int bCount =0;
 //     Serial.println(">> Success <<"); \
 //     print_vector(result); \
 //   }
-
+void blink(int LED, int dlay){
+        digitalWrite(LED, HIGH);
+        delay(dlay);
+        digitalWrite(LED, LOW);
+}
 
 void redisXadd(char* but){
   WiFiClient redisConn;
@@ -96,7 +98,7 @@ void redisXadd(char* but){
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  redisXadd("A");
+  // redisXadd("A");
 }
 
 void loop(){
