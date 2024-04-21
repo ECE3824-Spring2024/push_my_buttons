@@ -39,7 +39,6 @@
 #define STREAMS_KEY "A-stream"
 #define STREAMS_GROUP_1 "button"
 
-
 bool buttonStateA = 0;
 bool buttonStateB = 0;
 int aCount = 0;
