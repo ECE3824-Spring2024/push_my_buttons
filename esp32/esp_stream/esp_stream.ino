@@ -4,6 +4,7 @@
 #include <WiFiClient.h>
 #include <WiFi.h>
 #else
+
 #ifdef CORE_ESP8266_FEATURES_H // ESP8266
 #include <ESP8266WiFi.h>
 #endif
@@ -14,18 +15,23 @@
 #define LED 2
 #define bounce 150
 
-// Set wifi Address
-#define WIFI_SSID "Vandaley Industries"
-#define WIFI_PASSWORD "15Tattergrace48"
+#define wifiBlue 19
+#define wifiRed 18
 
-// #define WIFI_SSID "Myphone"
-// #define WIFI_PASSWORD "12345678"
+#define reset 23
+
+// Set wifi Address
+// #define WIFI_SSID "Vandaley Industries"
+// #define WIFI_PASSWORD "15Tattergrace48"
+
+#define WIFI_SSID "Myphone"
+#define WIFI_PASSWORD "12345678"
 
 // #define WIFI_SSID "tuiot"
 // #define WIFI_PASSWORD "bruc3l0w3"
 
 //Set redis server
-#define REDIS_ADDR "redis-12305.c270.us-east-1-3.ec2.cloud.redislabs.com"
+#define REDIS_ADDR "redis-12305.c270.us-east-1-3.ec2.cloud.redislabs.co"
 #define REDIS_PORT 12305
 #define REDIS_PASSWORD "mJxWBQYqdbSipoLAcc59qUN1zPQdDMmD"
 
@@ -50,6 +56,8 @@ void redisXadd(char* but){
   if (!redisConn.connect(REDIS_ADDR, REDIS_PORT)){
 
       Serial.println("Failed to connect to the Redis server!");
+      digitalWrite(wifiBlue, HIGH);
+      digitalWrite(wifiRed, HIGH);
       return;
   }
 
@@ -62,10 +70,10 @@ void redisXadd(char* but){
   }
 
   else{
-
       Serial.printf("Failed to authenticate to the Redis server! Errno: %d\n", (int)connRet);
       return;
   }
+
   if(but == "A"){
       aCount= redis.get(but).toInt();
       aCount++;
@@ -86,52 +94,62 @@ void redisXadd(char* but){
   Serial.print("Connection closed!");
 }
 
-  void setup()
-{
-  Serial.begin(115200);
-  Serial.println();
-
-  pinMode(LED, OUTPUT);
-  pinMode(buttonA, INPUT);
-  pinMode(buttonB, INPUT);
-
-
+void wificonnect(){
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to the WiFi");
-  
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  digitalWrite(wifiRed,HIGH);
+
+  while (WiFi.status() != WL_CONNECTED){
+    digitalWrite(wifiRed,HIGH);
     delay(250);
     Serial.print(".");
+    digitalWrite(wifiRed,LOW);
+    delay(250);
   }
   Serial.println();
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
+  digitalWrite(wifiRed, LOW);
+  digitalWrite(wifiBlue, HIGH);
+}
 
-  //blink 5 times to alert end of setup;
-  for(int i = 0 ; i < 5 ; i++){
-    blink(2,150);
-    delay(100);
-  }
-
+  void setup()
+{
+  Serial.begin(115200);
+  Serial.println();
+  pinMode(reset, OUTPUT);
+  pinMode(LED, OUTPUT);
+  pinMode(buttonA, INPUT);
+  pinMode(buttonB, INPUT);
+  pinMode(wifiBlue, OUTPUT);
+  pinMode(wifiRed, OUTPUT);
+  wificonnect();
 }
 
 void loop(){
-buttonStateA = digitalRead(buttonA);
-buttonStateB = digitalRead(buttonB);
+  while(WiFi.status() == WL_CONNECTED){
+    digitalWrite(wifiBlue, HIGH);
+  
+    
+    buttonStateA = digitalRead(buttonA);
+    buttonStateB = digitalRead(buttonB);
 
-if( buttonStateA == HIGH){
-  delay(bounce);
-  redisXadd("A");
-  blink(LED, 500);
-}
+    if( buttonStateA == HIGH){
+      delay(bounce);
+      redisXadd("A");
+      blink(LED, 500);
+    }
 
-if( buttonStateB == HIGH){
-  delay(bounce);
-  redisXadd("B");
-  blink(LED, 1000);
-}
+    if( buttonStateB == HIGH){
+      delay(bounce);
+      redisXadd("B");
+      blink(LED, 1000);
+    }
+  }
 
-
+  if (WiFi.status() != WL_CONNECTED){
+    digitalWrite(wifiBlue, LOW);
+    esp_restart();
+  }
 }
