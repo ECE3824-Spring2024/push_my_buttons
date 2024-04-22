@@ -18,6 +18,9 @@
 #define wifiBlue 19
 #define wifiRed 18
 
+#define aGreen 22
+#define bGreen 23
+
 #define reset 23
 
 // Set wifi Address
@@ -31,7 +34,7 @@
 // #define WIFI_PASSWORD "bruc3l0w3"
 
 //Set redis server
-#define REDIS_ADDR "redis-12305.c270.us-east-1-3.ec2.cloud.redislabs.co"
+#define REDIS_ADDR "redis-12305.c270.us-east-1-3.ec2.cloud.redislabs.com"
 #define REDIS_PORT 12305
 #define REDIS_PASSWORD "mJxWBQYqdbSipoLAcc59qUN1zPQdDMmD"
 
@@ -44,10 +47,13 @@ bool buttonStateB = 0;
 int aCount = 0;
 int bCount =0;
 
-void blink(int led, int dlay){
-        digitalWrite(LED, HIGH);
-        delay(dlay);
-        digitalWrite(LED, LOW);
+void blink(int led, int dlay, int blinks){
+  for (int i = 0 ; i < blinks ; i++){
+    digitalWrite(led, HIGH);
+    delay(dlay);
+    digitalWrite(led, LOW);
+    delay(dlay);
+  }
 }
 
 void redisXadd(char* but){
@@ -123,7 +129,11 @@ void wificonnect(){
   pinMode(buttonB, INPUT);
   pinMode(wifiBlue, OUTPUT);
   pinMode(wifiRed, OUTPUT);
+  pinMode(aGreen, OUTPUT);
+  pinMode(bGreen, OUTPUT);
   wificonnect();
+  digitalWrite(aGreen, HIGH);
+  digitalWrite(bGreen, HIGH);
 }
 
 void loop(){
@@ -135,15 +145,19 @@ void loop(){
     buttonStateB = digitalRead(buttonB);
 
     if( buttonStateA == HIGH){
+      digitalWrite(aGreen, LOW);
       delay(bounce);
       redisXadd("A");
-      blink(LED, 500);
+      blink(aGreen, 150, 4);
+      digitalWrite(aGreen, HIGH);
     }
 
     if( buttonStateB == HIGH){
+      digitalWrite(bGreen, LOW);
       delay(bounce);
       redisXadd("B");
-      blink(LED, 1000);
+      blink(bGreen, 150, 4);
+      digitalWrite(bGreen, HIGH);
     }
   }
 
