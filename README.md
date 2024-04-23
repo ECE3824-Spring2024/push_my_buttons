@@ -21,5 +21,5 @@ docker-compose down
 To access the query web interface, simply visit `localhost:3000`. 
 Type the following into your browser of choice (no port number is required):
 ```
-localhos5:3000
+localhost:3000
 ```
