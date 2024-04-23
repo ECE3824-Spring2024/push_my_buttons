@@ -1,4 +1,4 @@
-# The Great Debate
+# The Great IDEAS Hub Debate
 ECE 3824 Final Project: Question Response Monitoring using a Cloud-connected IoT Device
 
 The purpose of this project is to deploy a full-stack web app using Docker and the AWS Cloud.
