@@ -2,28 +2,9 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Bar, Line } from 'react-chartjs-2';
 import "chart.js/auto";
 import 'chartjs-adapter-moment';
-
-// import {
-//     Chart as ChartJS,
-//     TimeScale, //Import timescale instead of category for X axis
-//     LinearScale,
-//     PointElement,
-//     LineElement,
-//     Title,
-//     Tooltip,
-//     Legend
-// } from "chart.js";
-// import { Chart } from "react-chartjs-2";
-  
-// ChartJS.register(
-// TimeScale, //Register timescale instead of category for X axis
-// LinearScale,
-// PointElement,
-// LineElement,
-// Title,
-// Tooltip,
-// Legend
-// );
+import moment from 'moment';
+import 'moment-timezone';
+import 'moment/locale/en-au';
 
 function App() {
   
@@ -79,32 +60,11 @@ function App() {
     fetchData();
 
     // Polling interval
-    const intervalId = setInterval(fetchData, 2000); // Poll every 2 seconds
+    const intervalId = setInterval(fetchData, 5000); // Poll every 5 seconds
 
     // Clear interval on component unmount
     return () => clearInterval(intervalId);
     }, []);
-    
-  /*
-  const [data, setData] = useState([{}])
-
-  useEffect(() => {
-    fetch("/total_count")
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      setData(data)
-      console.log(data);
-    })
-    .catch(error => {
-      console.error('There was a problem with the fetch operation:', error.message);
-    });
-  }, [])
-  */
 
   const boxStyle = {
     flex: 1,
@@ -145,7 +105,7 @@ function App() {
 
   const formatData = (data) => {
     return {
-        labels: data.map(entry => new Date(entry.timestamp).toLocaleTimeString()),
+        labels: data.map(entry => moment(entry.timestamp).format('MMM D, YYYY, h:mm:ss A')),
         datasets: [{
             label: 'Presses',
             data: data.map(entry => entry.count),
@@ -154,17 +114,17 @@ function App() {
         }],
     };
 };
-
+    
     useEffect(() => {
-        if (chartRef.current) {
+        if (var_presses_A.length > 0 && chartRef.current) {
             chartRef.current.data.datasets[0].data = var_presses_A.map(entry => entry.count);
-            chartRef.current.data.labels = var_presses_A.map(entry => new Date(entry.timestamp).toLocaleTimeString());
+            chartRef.current.data.labels = var_presses_A.map(entry => moment(entry.timestamp).format('MMM D, YYYY, h:mm:ss A'));
             chartRef.current.update();
         }
     }, [var_presses_A]);
 
     useEffect(() => {
-        if (chartRef.current) {
+        if (var_presses_B.length > 0 && chartRef.current) {
             chartRef.current.data.datasets[1].data = var_presses_B.map(entry => entry.count);
             chartRef.current.update();
         }
@@ -245,6 +205,10 @@ function App() {
                         type: 'time',
                         time: {
                             unit: 'second',
+                            displayFormats: {
+                                //minute: 'MMM D, YYYY, h:mm A'
+                                second: 'MMM D, YYYY, h:mm:ss A'
+                            }
                         },
                     },
                     y: {

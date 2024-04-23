@@ -22,6 +22,7 @@ def total_count():
 
 @server.route('/variable_count', methods=['GET'])
 def variable_count():
+    print(datetime.now().isoformat(sep='T', timespec='seconds'))
     return jsonify(
         {
             'var_presses_A': [
