@@ -20,8 +20,5 @@ ENV FLASK_ENV production
 # copy the server script into the container
 COPY backend_server.py .
 
-# Expose port 5000
-EXPOSE 5000
-
 # run the production application
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "backend_server:server"]
