@@ -17,6 +17,8 @@ services:
             - frontnet
         depends_on:
             - backend
+        stdin_open: true # docker run -i
+        tty: true        # docker run -t
 
     # service: backend (Flask)
     backend:

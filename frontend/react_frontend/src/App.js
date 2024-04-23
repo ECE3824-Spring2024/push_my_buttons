@@ -1,3 +1,16 @@
+/* 
+@brief Runs a React frontend that displays interactive graphs.
+
+@section Description
+This program drives the React frontend, which constantly polls
+a Flask backend. The Flask backend queries a Redis database, and
+ships the results to this frontend to be displayed using chartjs.
+
+@section Author
+- Muho Ahmed, Michael Caiozzo, Anna Chau, Luke Dewees, John Nori, and Abraham Paroya (c) 2024
+*/
+
+// IMPORTS
 import React, { useState, useEffect, useRef } from 'react'
 import { Bar, Line } from 'react-chartjs-2';
 import "chart.js/auto";
@@ -7,337 +20,438 @@ import 'moment-timezone';
 import 'moment/locale/en-au';
 import './App.css';
 
+// The Frontend Application
 function App() {
 
-    const option_A = "Fight 100 duck-sized horses"
-    const option_B = "Fight a single horse-sized duck"
+    /////////////// STATE and DATA VARIABLES  ///////////////
 
-    const [selectedOption, setSelectedOption] = useState('option1');
-    const [state1, setState1] = useState(true);
-    const [state2, setState2] = useState(false);
-    const [state3, setState3] = useState(false);
-  
-  const [presses_A, setPressesA] = useState(0);
-  const [presses_B, setPressesB] = useState(0);
+    // variables that control the question and the two options
+    const question = "Would you rather ...";
+    const option_A = "Fight 100 duck-sized horses";
+    const option_B = "Fight a single horse-sized duck";
 
-  const [var_presses_A, setVarPressesA] = useState([]);
-  const [var_presses_B, setVarPressesB] = useState([]);
+    // variables that store the current state of the radio button
+    const [selected_option, set_selected_option] = useState('option1');
+    const [state_counter, set_state_counter]     = useState(true);
+    const [state_bar, set_state_bar]             = useState(false);
+    const [state_line, set_state_line]           = useState(false);
 
-  const chartRef = useRef(null);
+    // variables that store the total number of times each button has been pressed
+    const [presses_A, set_presses_A] = useState(0);
+    const [presses_B, set_presses_B] = useState(0);
 
-  const handleOptionChange = (event) => {
-    setSelectedOption(event.target.value);
-    switch (event.target.value) {
-        case 'option1':
-          setState1(true);
-          setState2(false);
-          setState3(false);
-          break;
-        case 'option2':
-          setState1(false);
-          setState2(true);
-          setState3(false);
-          break;
-        case 'option3':
-          setState1(false);
-          setState2(false);
-          setState3(true);
-          break;
-        default:
-          break;
-  };
-}
+    // variables (arrays) that store the timeseries data for displaying presses over time
+    const [var_presses_A, set_var_presses_A] = useState([]);
+    const [var_presses_B, set_var_presses_B] = useState([]);
 
-  useEffect(() => {
-      const fetchData = async () => {
-          try {
-              const response = await fetch('/total_count');
-              if (!response.ok) {
-                  throw new Error('Network response was not ok');
-              }
-              const data = await response.json();
-              setPressesA(data.total_presses_A);
-              setPressesB(data.total_presses_B);
-          } catch (error) {
-              console.error('There was a problem fetching the data:', error.message);
-          }
-      };
-
-      // Initial fetch
-      fetchData();
-
-      // Polling interval
-      let intervalId;
-      if (!state3) {
-        intervalId = setInterval(fetchData, 5000); // Poll every 5 seconds
-      }
-      else {
-        intervalId = null;
-      }
-  
-      // Clear interval on component unmount
-      return () => clearInterval(intervalId);
-  }, [state3]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-        try {
-            const response = await fetch('/variable_count');
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            const { var_presses_A, var_presses_B } = await response.json();
-            setVarPressesA(prevDataA => [...prevDataA, ...var_presses_A]);
-            setVarPressesB(prevDataB => [...prevDataB, ...var_presses_B]);
-        } catch (error) {
-            console.error('There was a problem fetching the data:', error.message);
-        }
-    };
-
-    // Initial fetch
-    fetchData();
-
-    // Polling interval
-    const intervalId = setInterval(fetchData, 2000); // Poll every 5 seconds
-
-    // Clear interval on component unmount
-    return () => clearInterval(intervalId);
-    }, []);
-
-  const boxStyle = {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    border: "2px solid #ccc",
-    borderRadius: "10px",
-    padding: "1rem",
-    margin: "0.5rem",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-  };
-
-  const chartData = {
-    labels: [option_A, option_B],
-    datasets: [
-        {
-            label: 'Presses',
-            data: [presses_A, presses_B],
-            backgroundColor: [
-                presses_A > presses_B ? 'green' : 'red',
-                presses_B > presses_A ? 'green' : 'red',
-            ],
-        },
-    ],
-  };
-
-  const chartOptions = {
-    maintainAspectRatio: false,
-    responsive:true,
-    scales: {
-        y: {
-            beginAtZero: true,
-            ticks: {
-                precision: 0,
-            },
-        },
-    },
-  };
-
-
-  const lineChartOptions = {
-    maintainAspectRatio: false,
-    responsive:true,
-    scales: {
-        x: {
-            type: 'time',
-            time: {
-                unit: 'second',
-                displayFormats: {
-                    //minute: 'MMM D, YYYY, h:mm A'
-                    second: 'MMM D, YYYY, h:mm:ss A'
-                }
-            },
-        },
-        y: {
-            beginAtZero: true,
-            ticks: {
-                precision: 0,
-            },
-        },
-    },
-}
-
-  const formatData = (data) => {
-    return {
-        labels: data.map(entry => moment(entry.timestamp).format('MMM D, YYYY, h:mm:ss A')),
-        datasets: [{
-            label: 'Presses',
-            data: data.map(entry => entry.count),
-            borderColor: 'blue',
-            fill: false,
-        }],
-    };
-};
+    // reference to the timeseries line chart
+    const chart_reference = useRef(null);
     
-    useEffect(() => {
-        if (var_presses_A.length > 0 && chartRef.current) {
-            chartRef.current.data.datasets[0].data = var_presses_A.map(entry => entry.count);
-            chartRef.current.data.labels = var_presses_A.map(entry => moment(entry.timestamp).format('MMM D, YYYY, h:mm:ss A'));
-            chartRef.current.update();
-        }
-    }, [var_presses_A]);
+    ///////////////  STYLING VARIABLES  ///////////////
 
-    useEffect(() => {
-        if (var_presses_B.length > 0 && chartRef.current) {
-            chartRef.current.data.datasets[1].data = var_presses_B.map(entry => entry.count);
-            chartRef.current.update();
-        }
-    }, [var_presses_B]);
+    // styling for counters
+    const counter_style = {
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        border: "2px solid #ccc",
+        borderRadius: "10px",
+        padding: "1rem",
+        margin: "0.5rem",
+        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    };
 
-  return (
-    <div>
-        <div class="mt-5"></div>
-        <div className="header">
-        <h1 className="text-center"><strong>The Great Debate</strong></h1>
-      </div>
-
-     <div className="container mt-5">
-      <h1 className="text-center">Would You Rather...</h1>
-
-      <div className="row justify-content-center mt-4">
-        <div className="col-md-5">
-          <div className="card text-center">
-            <div className="card-body">
-              <h5 className="card-title">{option_A}?</h5>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-5">
-          <div className="card text-center">
-            <div className="card-body">
-              <h5 className="card-title">{option_B}?</h5>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-         <div className="container mt-5">
-      <h2 className="text-center">Select data visualization format:</h2>
-
-      <div className="d-flex justify-content-center mt-4">
-        <div className="btn-group btn-group-toggle" data-toggle="buttons">
-          <label className={`btn btn-outline-primary ${selectedOption === 'option1' ? 'active' : ''}`}>
-            <input
-              type="radio"
-              value="option1"
-              checked={selectedOption === 'option1'}
-              onChange={handleOptionChange}
-            />
-            &nbsp;Counter
-          </label>
-
-          <label className={`btn btn-outline-primary ${selectedOption === 'option2' ? 'active' : ''}`}>
-            <input
-              type="radio"
-              value="option2"
-              checked={selectedOption === 'option2'}
-              onChange={handleOptionChange}
-            />
-            &nbsp;Bar Chart
-          </label>
-
-          <label className={`btn btn-outline-primary ${selectedOption === 'option3' ? 'active' : ''}`}>
-            <input
-              type="radio"
-              value="option3"
-              checked={selectedOption === 'option3'}
-              onChange={handleOptionChange}
-            />
-            &nbsp;Timeseries
-          </label>
-        </div>
-      </div>
-    </div>
-    {state1 && 
-      <div
-          style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              fontSize: "300%",
-              height: "50vh",
-              padding: "2rem",
-          }}
-      >
-          <div
-              style={{
-                  ...boxStyle,
-                  backgroundColor: presses_A > presses_B ? "springgreen" : "tomato",
-              }}
-          >
-              <h3>{option_A}</h3>
-              <div
-                  style={{
-                      fontSize: "80%",
-                      marginTop: "1rem",
-                  }}
-              >
-                  {presses_A}
-              </div>
-          </div>
-          <div
-              style={{
-                  ...boxStyle,
-                  backgroundColor: presses_B > presses_A ? "springgreen" : "tomato",
-              }}
-          >
-              <h3>{option_B}</h3>
-              <div
-                  style={{
-                      fontSize: "80%",
-                      marginTop: "1rem",
-                  }}
-              >
-                  {presses_B}
-              </div>
-          </div>
-      </div>}
-
-      {state2 &&
-      <div className="mt-5">
-      <h2 className="text-center">Bar Chart (Race)</h2>
-      <div class="mt-5"></div>
-      <div style={{ width: '50%', margin: 'auto', height: "40vh"}}>
-        <Bar data={chartData} options={chartOptions} />
-      </div>
-      </div>}
-      {state3 && 
-      <div className="mt-5">
-      <h2 className="text-center">Timeseries Plot (Presses versus Time)</h2>
-      <div class="mt-5"></div>
-      <div style={{ width: '70%', margin: 'auto',height: "40vh", }}>
-        <Line
-            ref={chartRef}
-            data={{
-                datasets: [
-                    {
-                        ...formatData(var_presses_A),
-                        label: 'Michael Caiozzo',
-                        borderColor: 'blue',
-                    },
-                    {
-                        ...formatData(var_presses_B),
-                        label: 'Mike Tyson',
-                        borderColor: 'red',
-                    },
+    // styling for bar chart
+    const bar_chart_data = {
+        labels: [option_A, option_B],
+        datasets: [
+            {
+                label: 'Presses',
+                data: [presses_A, presses_B],
+                backgroundColor: [
+                    presses_A > presses_B ? 'green' : 'red',
+                    presses_B > presses_A ? 'green' : 'red',
                 ],
-            }}
-            options={lineChartOptions}
-        />
+            },
+        ],
+    };
+
+    // options for bar chart
+    const bar_chart_options = {
+        maintainAspectRatio: false,
+        responsive:true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0,
+                },
+            },
+        },
+    };
+
+    // options for line chart
+    const linebar_chart_options = {
+        maintainAspectRatio: false,
+        responsive:true,
+        scales: {
+            x: {
+                type: 'time',
+                time: {
+                    unit: 'second',
+                        displayFormats: {
+                        //minute: 'MMM D, YYYY, h:mm A'
+                        second: 'MMM D, YYYY, h:mm:ss A'
+                    }
+                },
+            },
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0,
+                },
+            },
+        },
+    };
+
+    ///////////////  ARROW FUNCTIONS  ///////////////
+
+    // arrow function: handle_radio_change
+    const handle_radio_change = (event) => {
+
+        // update the variable that keeps track of which button is pressed
+        set_selected_option(event.target.value);
+
+        // determine which way the data should be displayed
+        switch (event.target.value) {
+            case 'option1':
+                set_state_counter(true);
+                set_state_bar(false);
+                set_state_line(false);
+                break;
+            case 'option2':
+                set_state_counter(false);
+                set_state_bar(true);
+                set_state_line(false);
+                break;
+            case 'option3':
+                set_state_counter(false);
+                set_state_bar(false);
+                set_state_line(true);
+                break;
+            default:
+                break;
+        }
+    }
+
+    // arrow function: format_timeseries_data
+    const format_timeseries_data = (data) => {
+
+        // return the formatted timeseries data
+        return {
+            labels: data.map(entry => moment(entry.timestamp).format('MMM D, YYYY, h:mm:ss A')),
+            datasets: [
+                {
+                    label: 'Presses',
+                    data: data.map(entry => entry.count),
+                    borderColor: 'blue',
+                    fill: false,
+                }
+            ],
+        };
+    }
+
+    ///////////////  useEffect Hook INSTANCES  ///////////////
+
+    // useEffect hook: poll for total count updates (conditionally ON)
+    useEffect(() => {
+
+        // arrow function: fetch_updated_data
+        const fetch_updated_data = async () => {
+
+            // try to retrieve data from the backend
+            try {
+
+                const response = await fetch('/total_count');
+
+                if (!response.ok) {
+                    throw new Error('Network response error!');
+                }
+
+                // parse the JSON data from the response
+                const data = await response.json();
+
+                // update the total count variables
+                set_presses_A(data.total_presses_A);
+                set_presses_B(data.total_presses_B);
+            }
+            
+            catch (error) {
+                console.error('[ERROR] Fetching data failed:', error.message);
+            }
+        }
+
+        // call the function to fetch data (upon timer expiration)
+        fetch_updated_data();
+
+        // set the polling interval to 5 seconds only if the user is NOT looking
+        // as the timeseries plot on the webpage
+        let timer_period;
+        if (!state_line) {
+
+            // set the interval to 5 seconds
+            timer_period = setInterval(fetch_updated_data, 5000);
+        }
+        else {
+
+            // otherwise, do NOT continue polling so as to make more efficient use
+            // of application resources
+            timer_period = null;
+        }
+    
+        // turn off the timer upon return
+        return () => clearInterval(timer_period);
+    
+    }, [state_line])
+
+    // useEffect hook: poll for timeseries updates (always ON)
+    useEffect(() => {
+
+        // arrow function: fetch_updated_data
+        const fetch_updated_data = async () => {
+
+            // try to retrieve data from the backend
+            try {
+                
+                const response = await fetch('/variable_count');
+                
+                if (!response.ok) {
+                    throw new Error('Network response error!');
+                }
+
+                // parse the JSON data from the response
+                const { var_presses_A, var_presses_B } = await response.json();
+
+                // add new timeseries data to the existing arrays
+                set_var_presses_A(prevDataA => [...prevDataA, ...var_presses_A].slice(-10));
+                set_var_presses_B(prevDataB => [...prevDataB, ...var_presses_B].slice(-10));
+            }
+            
+            catch (error) {
+                console.error('There was a problem fetching the data:', error.message);
+            }
+        }
+
+        // call the function to fetch data (upon timer expiration)
+        fetch_updated_data();
+
+        // set the polling interval to 1 hour
+        const timer_period = setInterval(fetch_updated_data, 2000);
+
+        // turn off the timer upon return
+        return () => clearInterval(timer_period);
+    }, [])
+
+    // useEffect hook: update the timeseries data array for the x-axis and option A
+    useEffect(() => {
+
+        // only update if new data is available
+        if (var_presses_A.length > 0 && chart_reference.current) {
+
+            // data for option A
+            chart_reference.current.data.datasets[0].data = var_presses_A.map(entry => entry.count);
+
+            // timestamp (same for option A and option B since data is fetched at the same time)
+            chart_reference.current.data.labels = var_presses_A.map(entry => moment(entry.timestamp).format('MMM D, YYYY, h:mm:ss A'));
+
+            // update the chart
+            chart_reference.current.update();
+        }
+    }, [var_presses_A])
+
+    // useEffect hook: update the timeseries data array for option B
+    useEffect(() => {
+
+        // only update if new data is available
+        if (var_presses_B.length > 0 && chart_reference.current) {
+
+            // data for option B
+            chart_reference.current.data.datasets[1].data = var_presses_B.map(entry => entry.count);
+
+            // update the chart
+            chart_reference.current.update();
+        }
+
+    }, [var_presses_B])
+
+    ///////////////  HTML Webpage Rendering  ///////////////
+    return (
+
+        <div>
+
+            <div class="mt-5"></div>
+
+            <div className="header">
+                <h1 className="text-center"><strong>The Great Debate</strong></h1>
+            </div>
+
+            <div className="container mt-5">
+                
+                <h1 className="text-center">{question}</h1>
+                
+                <div className="row justify-content-center mt-4">
+                    <div className="col-md-5">
+                        <div className="card text-center">
+                            <div className="card-body">
+                                <h5 className="card-title">{option_A}?</h5>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="col-md-5">
+                        <div className="card text-center">
+                            <div className="card-body">
+                                <h5 className="card-title">{option_B}?</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="container mt-5">
+
+                <h2 className="text-center">Select data visualization format:</h2>
+                
+                <div className="d-flex justify-content-center mt-4">
+                    <div className="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label className={`btn btn-outline-primary ${selected_option === 'option1' ? 'active' : ''}`}>
+                            <input
+                                type="radio"
+                                value="option1"
+                                checked={selected_option === 'option1'}
+                                onChange={handle_radio_change}
+                            />
+                            &nbsp;Counter
+                        </label>
+
+                        <label className={`btn btn-outline-primary ${selected_option === 'option2' ? 'active' : ''}`}>
+                            <input
+                                type="radio"
+                                value="option2"
+                                checked={selected_option === 'option2'}
+                                onChange={handle_radio_change}
+                            />
+                            &nbsp;Bar Chart
+                        </label>
+
+                        <label className={`btn btn-outline-primary ${selected_option === 'option3' ? 'active' : ''}`}>
+                            <input
+                                type="radio"
+                                value="option3"
+                                checked={selected_option === 'option3'}
+                                onChange={handle_radio_change}
+                            />
+                            &nbsp;Timeseries
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            {state_counter && 
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        fontSize: "300%",
+                        height: "50vh",
+                        padding: "2rem",
+                    }}
+                >
+                    <div
+                        style={{
+                            ...counter_style,
+                            backgroundColor: presses_A > presses_B ? "springgreen" : "tomato",
+                        }}
+                    >
+                        <h3>{option_A}</h3>
+                        <div
+                            style={{
+                                fontSize: "80%",
+                                marginTop: "1rem",
+                            }}
+                        >
+                        {presses_A}
+                        </div>
+                    </div>
+                    <div
+                        style={{
+                            ...counter_style,
+                            backgroundColor: presses_B > presses_A ? "springgreen" : "tomato",
+                        }}
+                    >
+                        <h3>{option_B}</h3>
+                        <div
+                            style={{
+                                fontSize: "80%",
+                                marginTop: "1rem",
+                            }}
+                        >
+                        {presses_B}
+                        </div>
+                    </div>
+                </div>
+            }
+
+            {state_bar &&
+
+                <div className="mt-5">
+
+                    <h2 className="text-center">Bar Chart (Race)</h2>
+                    
+                    <div class="mt-5"></div>
+            
+                    <div style={{ width: '50%', height: '40vh', margin: 'auto'}}>
+                        <Bar data={bar_chart_data} options={bar_chart_options} />
+                    </div>
+                </div>
+            }
+
+
+            {state_line && 
+
+                <div className="mt-5">
+                    
+                    <h2 className="text-center">Timeseries Plot (Presses versus Time)</h2>
+                    
+                    <div class="mt-5"></div>
+                    
+                    <div style={{ width: '70%', margin: 'auto',height: "40vh", }}>
+                        <Line
+                            ref={chart_reference}
+                            data={{
+                                datasets: [
+                                    {
+                                        ...format_timeseries_data(var_presses_A),
+                                        label: option_A,
+                                        borderColor: 'blue',
+                                    },
+                                    {
+                                        ...format_timeseries_data(var_presses_B),
+                                        label: option_B,
+                                        borderColor: 'red',
+                                    },
+                                ],
+                            }}
+                            options={linebar_chart_options}
+                        />
+                    </div>
+                </div>
+            }
+
     </div>
-    </div>}
-    </div>
+
   )
 }
 
