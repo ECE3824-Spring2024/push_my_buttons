@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 5000
 
 # Run the application
-CMD ["python", "backend_server.py"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "backend_server:server"]
