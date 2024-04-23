@@ -1,0 +1,36 @@
+# YAML
+#
+# Application: Web service to monitor status of IDEAS Hub buttons.
+#
+# Purpose: Builds a web stack consisting of multiple containers
+
+version: "3.8"
+
+services:
+
+    # service: frontend (nginx/React)
+    frontend:
+        build: ./frontend/react_frontend
+        ports:
+            - 3000:80
+        networks:
+            - frontnet
+        depends_on:
+            - backend
+        stdin_open: true # docker run -i
+        tty: true        # docker run -t
+
+    # service: backend (Flask)
+    backend:
+        container_name: backend
+        build: ./backend
+        expose:
+            - 5000
+        networks:
+            - frontnet
+        stdin_open: true # docker run -i
+        tty: true        # docker run -t
+
+networks:
+  backnet:
+  frontnet:
