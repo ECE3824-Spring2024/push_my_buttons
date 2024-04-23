@@ -5,8 +5,17 @@ import 'chartjs-adapter-moment';
 import moment from 'moment';
 import 'moment-timezone';
 import 'moment/locale/en-au';
+import './App.css';
 
 function App() {
+
+    const option_A = "Fight 100 duck-sized horses"
+    const option_B = "Fight horse-sized ducks"
+
+    const [selectedOption, setSelectedOption] = useState('option1');
+    const [state1, setState1] = useState(true);
+    const [state2, setState2] = useState(false);
+    const [state3, setState3] = useState(false);
   
   const [presses_A, setPressesA] = useState(0);
   const [presses_B, setPressesB] = useState(0);
@@ -15,6 +24,29 @@ function App() {
   const [var_presses_B, setVarPressesB] = useState([]);
 
   const chartRef = useRef(null);
+
+  const handleOptionChange = (event) => {
+    setSelectedOption(event.target.value);
+    switch (event.target.value) {
+        case 'option1':
+          setState1(true);
+          setState2(false);
+          setState3(false);
+          break;
+        case 'option2':
+          setState1(false);
+          setState2(true);
+          setState3(false);
+          break;
+        case 'option3':
+          setState1(false);
+          setState2(false);
+          setState3(true);
+          break;
+        default:
+          break;
+  };
+}
 
   useEffect(() => {
       const fetchData = async () => {
@@ -35,11 +67,17 @@ function App() {
       fetchData();
 
       // Polling interval
-      const intervalId = setInterval(fetchData, 5000); // Poll every 5 seconds
-
+      let intervalId;
+      if (!state3) {
+        intervalId = setInterval(fetchData, 5000); // Poll every 5 seconds
+      }
+      else {
+        intervalId = null;
+      }
+  
       // Clear interval on component unmount
       return () => clearInterval(intervalId);
-  }, []);
+  }, [state3]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,7 +98,7 @@ function App() {
     fetchData();
 
     // Polling interval
-    const intervalId = setInterval(fetchData, 5000); // Poll every 5 seconds
+    const intervalId = setInterval(fetchData, 2000); // Poll every 5 seconds
 
     // Clear interval on component unmount
     return () => clearInterval(intervalId);
@@ -79,7 +117,7 @@ function App() {
   };
 
   const chartData = {
-    labels: ['Michael Caiozzo', 'Mike Tyson'],
+    labels: [option_A, option_B],
     datasets: [
         {
             label: 'Presses',
@@ -93,6 +131,8 @@ function App() {
   };
 
   const chartOptions = {
+    maintainAspectRatio: false,
+    responsive:true,
     scales: {
         y: {
             beginAtZero: true,
@@ -102,6 +142,30 @@ function App() {
         },
     },
   };
+
+
+  const lineChartOptions = {
+    maintainAspectRatio: false,
+    responsive:true,
+    scales: {
+        x: {
+            type: 'time',
+            time: {
+                unit: 'second',
+                displayFormats: {
+                    //minute: 'MMM D, YYYY, h:mm A'
+                    second: 'MMM D, YYYY, h:mm:ss A'
+                }
+            },
+        },
+        y: {
+            beginAtZero: true,
+            ticks: {
+                precision: 0,
+            },
+        },
+    },
+}
 
   const formatData = (data) => {
     return {
@@ -132,17 +196,77 @@ function App() {
 
   return (
     <div>
+        <div class="mt-5"></div>
       <center>
           <h1><strong>The Great Debate</strong></h1>
-          <h2>Who is the better Mike?</h2>
+
+     <div className="container mt-5">
+      <h1 className="text-center">Would You Rather...</h1>
+
+      <div className="row justify-content-center mt-4">
+        <div className="col-md-5">
+          <div className="card text-center">
+            <div className="card-body">
+              <h5 className="card-title">{option_A}?</h5>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-md-5">
+          <div className="card text-center">
+            <div className="card-body">
+              <h5 className="card-title">{option_B}?</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
       </center>
+         <div className="container mt-5">
+      <h2 className="text-center">Select data visualization format:</h2>
+
+      <div className="d-flex justify-content-center mt-4">
+        <div className="btn-group btn-group-toggle" data-toggle="buttons">
+          <label className={`btn btn-outline-primary ${selectedOption === 'option1' ? 'active' : ''}`}>
+            <input
+              type="radio"
+              value="option1"
+              checked={selectedOption === 'option1'}
+              onChange={handleOptionChange}
+            />
+            &nbsp;Counter
+          </label>
+
+          <label className={`btn btn-outline-primary ${selectedOption === 'option2' ? 'active' : ''}`}>
+            <input
+              type="radio"
+              value="option2"
+              checked={selectedOption === 'option2'}
+              onChange={handleOptionChange}
+            />
+            &nbsp;Bar Chart
+          </label>
+
+          <label className={`btn btn-outline-primary ${selectedOption === 'option3' ? 'active' : ''}`}>
+            <input
+              type="radio"
+              value="option3"
+              checked={selectedOption === 'option3'}
+              onChange={handleOptionChange}
+            />
+            &nbsp;Timeseries
+          </label>
+        </div>
+      </div>
+    </div>
+    {state1 && 
       <div
           style={{
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               fontSize: "300%",
-              height: "100vh",
+              height: "50vh",
               padding: "2rem",
           }}
       >
@@ -152,7 +276,7 @@ function App() {
                   backgroundColor: presses_A > presses_B ? "springgreen" : "tomato",
               }}
           >
-              <h3>Michael Caiozzo</h3>
+              <h3>{option_A}</h3>
               <div
                   style={{
                       fontSize: "80%",
@@ -168,7 +292,7 @@ function App() {
                   backgroundColor: presses_B > presses_A ? "springgreen" : "tomato",
               }}
           >
-              <h3>Mike Tyson</h3>
+              <h3>{option_B}</h3>
               <div
                   style={{
                       fontSize: "80%",
@@ -178,11 +302,21 @@ function App() {
                   {presses_B}
               </div>
           </div>
-      </div>
-      <div style={{ width: '50%', margin: 'auto' }}>
+      </div>}
+
+      {state2 &&
+      <div className="mt-5">
+      <h2 className="text-center">Bar Chart (Race)</h2>
+      <div class="mt-5"></div>
+      <div style={{ width: '50%', margin: 'auto', height: "40vh"}}>
         <Bar data={chartData} options={chartOptions} />
       </div>
-      <div style={{ width: '70%', margin: 'auto' }}>
+      </div>}
+      {state3 && 
+      <div className="mt-5">
+      <h2 className="text-center">Timeseries Plot (Presses versus Time)</h2>
+      <div class="mt-5"></div>
+      <div style={{ width: '70%', margin: 'auto',height: "40vh", }}>
         <Line
             ref={chartRef}
             data={{
@@ -199,28 +333,10 @@ function App() {
                     },
                 ],
             }}
-            options={{
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: {
-                            unit: 'second',
-                            displayFormats: {
-                                //minute: 'MMM D, YYYY, h:mm A'
-                                second: 'MMM D, YYYY, h:mm:ss A'
-                            }
-                        },
-                    },
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0,
-                        },
-                    },
-                },
-            }}
+            options={lineChartOptions}
         />
     </div>
+    </div>}
     </div>
   )
 }
