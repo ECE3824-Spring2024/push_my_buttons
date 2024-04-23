@@ -10,7 +10,7 @@ import './App.css';
 function App() {
 
     const option_A = "Fight 100 duck-sized horses"
-    const option_B = "Fight horse-sized ducks"
+    const option_B = "Fight a single horse-sized duck"
 
     const [selectedOption, setSelectedOption] = useState('option1');
     const [state1, setState1] = useState(true);
@@ -197,8 +197,9 @@ function App() {
   return (
     <div>
         <div class="mt-5"></div>
-      <center>
-          <h1><strong>The Great Debate</strong></h1>
+        <div className="header">
+        <h1 className="text-center"><strong>The Great Debate</strong></h1>
+      </div>
 
      <div className="container mt-5">
       <h1 className="text-center">Would You Rather...</h1>
@@ -221,7 +222,6 @@ function App() {
         </div>
       </div>
     </div>
-      </center>
          <div className="container mt-5">
       <h2 className="text-center">Select data visualization format:</h2>
 
