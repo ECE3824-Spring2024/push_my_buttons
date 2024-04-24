@@ -18,8 +18,8 @@ docker-compose down
 ```
 
 # Accessing the Website
-To access the query web interface, simply visit `localhost:3000`. 
-Type the following into your browser of choice:
+To access the query web interface, simply visit `localhost`. 
+Type the following into your browser of choice (no port number is needed):
 ```
-localhost:3000
+localhost
 ```
