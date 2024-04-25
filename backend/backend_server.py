@@ -16,6 +16,7 @@ from datetime import datetime
 from random import randint
 import redis
 import time
+
 # define the Flask app
 server = Flask(__name__)
 
@@ -25,85 +26,65 @@ redis_db = redis.Redis(host='redis-12305.c270.us-east-1-3.ec2.cloud.redislabs.co
 @server.route('/total_count', methods=['GET'])
 def total_count():
 
-    ################ ADD REDIS CODE HERE ##################
-    
-    # Make a request to the redis server to get the total number of button presses.
-
-    # This will be polled at the rate that the frontend calls this endpoint.
-    
-    # Make sure to return the same data as below, replacing the 'randint' functions with the
-    # Redis results.
-
     stream_name = 'A-stream'
 
+    #   initializations
     total_presses_A = 0
     total_presses_B = 0
     
+    #   grabbing all entries in stream
     entries = redis_db.xrange(stream_name, '-', '+')
 
-    # Process each entry
+    #   processing entries
     for entry_id, entry in entries:
         try:
-            # Extract the value from the entry
+            # extract the value from the entry
             value = entry[b'button'].decode()
 
-            # Increment counts based on the value
+            # increment counts based on the value
             if value == 'A':
                 total_presses_A += 1
             elif value == 'B':
                 total_presses_B += 1
+
         except KeyError:
-            # Handle case where 'button' field is missing
+            # handle case where 'button' field is missing
             print("Warning! No entry for this specific ID: ", entry_id)
 
     return jsonify({'total_presses_A':int(total_presses_A), 'total_presses_B':int(total_presses_B)})
-
-    # return jsonify({'total_presses_A':randint(0,1000), 'total_presses_B':randint(0,1000)})
 
 
 @server.route('/variable_count', methods=['GET'])
 def variable_count():
 
-    ################ ADD REDIS CODE HERE ##################
-    
-    # Make a request to the redis server to analyze the stream.
-
-    # We just need to count the number of new stream events for each button
-    # press in the last hour. 
-
-    # This function is called once an hour by the React frontend, so no timer is needed
-    # in this Python code.
-    
-    # Make sure to return the same data as below, replacing the 'randint' functions with the
-    # Redis results.
-
-    # The timestamps are already generated as shown below. We just need to update the 'count' variable.
-
     stream_name = 'A-stream'
 
-    current_time = int(time.time() * 1000)          # converting current time to ms
-    desired_hours = 1
-    end_time_ms = desired_hours * 60 * 60 * 1000    # converting hours to ms
-    end_time = current_time - end_time_ms  
+    #   time conversion preparation for future use of xrange
+    current_time = int(time.time() * 1000)                      # converting current time to ms
+    desired_hours = 1                                           # specify hours (we chose to check every 1 hour)
+    end_time_ms = desired_hours * 60 * 60 * 1000                # converting desired hours to ms
+    end_time = current_time - end_time_ms                       # final end time
 
+    #   initializations
     count_a = 0
     count_b = 0
 
     # print("Current time:", current_time)
     # print("Desired end time:", end_time)
 
-    # Retrieve entries within the time range
+
+    #   grab entries within the time range
     entries = redis_db.xrange(stream_name, end_time, current_time)
-    # print(len(entries))
     # print("Entries in the last hour:", entries)
 
+    # extract the value from the entries from last hour
     for entry_id, entry_data in entries:
+        button_press = entry_data[b'button'].decode()
+
         # print("Entry ID:", entry_id.decode())
         # print("Entry data:", entry_data)
-
-        button_press = entry_data[b'button'].decode()
         
-        # Increment the corresponding counter based on the button press
+        # increment counts based on the value
         if button_press == 'A':
             count_a += 1
         elif button_press == 'B':
