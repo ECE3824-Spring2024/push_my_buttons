@@ -1,4 +1,5 @@
 #include <Redis.h>
+#include <esp_wifi.h>
 
 #ifdef HAL_ESP32_HAL_H_ // ESP32
 #include <WiFiClient.h>
@@ -10,28 +11,33 @@
 #endif
 #endif
 
-#define buttonA 4
-#define buttonB 5
+#define buttonA 5
+#define buttonB 4
 #define LED 2
 #define bounce 150
 
-#define wifiBlue 19
-#define wifiRed 18
+#define wifiBlue 22
+#define wifiRed 19
 
-#define aGreen 22
-#define bGreen 23
+#define aRed 13
+#define aGreen 12
+#define aBlue 14
 
-#define reset 23
+#define bRed    27
+#define bGreen  26
+#define bBlue   25
+
+
 
 // Set wifi Address
 // #define WIFI_SSID "Vandaley Industries"
 // #define WIFI_PASSWORD "15Tattergrace48"
 
-#define WIFI_SSID "Myphone"
-#define WIFI_PASSWORD "12345678"
+// #define WIFI_SSID "Myphone"
+// #define WIFI_PASSWORD "12345678"
 
-// #define WIFI_SSID "tuiot"
-// #define WIFI_PASSWORD "bruc3l0w3"
+#define WIFI_SSID "tuiot"
+#define WIFI_PASSWORD "bruc3l0w3"
 
 //Set redis server
 #define REDIS_ADDR "redis-12305.c270.us-east-1-3.ec2.cloud.redislabs.com"
@@ -46,6 +52,10 @@ bool buttonStateA = 0;
 bool buttonStateB = 0;
 int aCount = 0;
 int bCount =0;
+
+uint8_t newMACAddress[] = {0x08, 0xD1, 0xF9, 0x26, 0x35, 0x14};
+
+
 
 void blink(int led, int dlay, int blinks){
   for (int i = 0 ; i < blinks ; i++){
@@ -101,6 +111,9 @@ void redisXadd(char* but){
 
 void wificonnect(){
   WiFi.mode(WIFI_STA);
+
+  esp_wifi_set_mac(WIFI_IF_STA, &newMACAddress[0]);
+  
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to the WiFi");
   digitalWrite(wifiRed,HIGH);
@@ -123,17 +136,33 @@ void wificonnect(){
 {
   Serial.begin(115200);
   Serial.println();
-  pinMode(reset, OUTPUT);
+
   pinMode(LED, OUTPUT);
   pinMode(buttonA, INPUT);
   pinMode(buttonB, INPUT);
+
   pinMode(wifiBlue, OUTPUT);
   pinMode(wifiRed, OUTPUT);
-  pinMode(aGreen, OUTPUT);
-  pinMode(bGreen, OUTPUT);
+
+  pinMode(aRed,    OUTPUT);
+  pinMode(aGreen,  OUTPUT);
+  pinMode(aBlue,   OUTPUT);
+
+  pinMode(bRed,    OUTPUT);
+  pinMode(bGreen,  OUTPUT);
+  pinMode(bBlue,   OUTPUT);
+
+
+
+
   wificonnect();
+
+  Serial.println(WiFi.macAddress());
+
   digitalWrite(aGreen, HIGH);
   digitalWrite(bGreen, HIGH);
+
+  
 }
 
 void loop(){
@@ -146,17 +175,41 @@ void loop(){
 
     if( buttonStateA == HIGH){
       digitalWrite(aGreen, LOW);
+      digitalWrite(bGreen, LOW);
+
+      digitalWrite(aRed, HIGH);
+      digitalWrite(bRed, HIGH);
+
       delay(bounce);
       redisXadd("A");
+
+      digitalWrite(aRed, LOW);
+
       blink(aGreen, 150, 4);
+      digitalWrite(bRed, LOW);
       digitalWrite(aGreen, HIGH);
+      digitalWrite(bGreen, HIGH);
+
     }
 
     if( buttonStateB == HIGH){
+
+      digitalWrite(aGreen, LOW);
       digitalWrite(bGreen, LOW);
+
+      digitalWrite(aRed, HIGH);
+      digitalWrite(bRed, HIGH);
+
+
       delay(bounce);
       redisXadd("B");
+
+      digitalWrite(bRed, LOW);
+
       blink(bGreen, 150, 4);
+      
+      digitalWrite(bRed, LOW);
+      digitalWrite(aGreen, HIGH);
       digitalWrite(bGreen, HIGH);
     }
   }
