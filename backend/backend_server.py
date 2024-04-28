@@ -16,6 +16,7 @@ from datetime import datetime
 from random import randint
 import redis
 import time
+import pytz
 
 # define the Flask app
 server = Flask(__name__)
@@ -158,6 +159,48 @@ def initialize_count():
         return_dictionary['var_presses_B'].append({'timestamp':datetime.fromtimestamp(t/1000).isoformat(sep='T', timespec='seconds'), 'count':int(cb)})
 
     return jsonify(return_dictionary)
+
+# endpoint: query - return the total number of times each button has been pressed in the specified range
+@server.route('/query', methods=['POST'])
+def query():
+
+    stream_name = "A-stream"
+
+    # get the dates and times input by the user
+    data = request.json
+    start_date = data.get('start_date')
+    start_time = data.get('start_time')
+    end_date = data.get('end_date')
+    end_time = data.get('end_time')
+
+    start_datetime = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
+    end_datetime = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
+
+    edt = pytz.timezone('America/New_York')
+
+    start_datetime = edt.localize(start_datetime)
+    end_datetime = edt.localize(end_datetime)
+
+    start_timestamp = int(start_datetime.timestamp() * 1000)
+    end_timestamp = int(end_datetime.timestamp() * 1000)
+
+    print(start_timestamp, end_timestamp)
+    entries = redis_db.xrange(stream_name, start_timestamp, end_timestamp)
+    print(entries)
+
+    # extract the value from the entries from last hour
+    count_a = 0
+    count_b = 0
+    for entry_id, entry_data in entries:
+        button_press = entry_data[b'button'].decode()
+
+        # increment counts based on the value
+        if button_press == 'A':
+            count_a += 1
+        elif button_press == 'B':
+            count_b += 1
+        
+    return jsonify({'query_count_A':count_a,'query_count_B':count_b})
 
 if __name__ == '__main__':
     server.run(host='0.0.0.0', debug=True)

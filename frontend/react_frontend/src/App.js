@@ -35,6 +35,7 @@ function App() {
     const [state_counter, set_state_counter]     = useState(true);
     const [state_bar, set_state_bar]             = useState(false);
     const [state_line, set_state_line]           = useState(false);
+    const [state_query, set_state_query]         = useState(false);
 
     // variables that store the total number of times each button has been pressed
     const [presses_A, set_presses_A] = useState(0);
@@ -46,6 +47,16 @@ function App() {
 
     // reference to the timeseries line chart
     const chart_reference = useRef(null);
+
+    // query variables
+    const [start_date, set_start_date] = useState('');
+    const [start_time, set_start_time] = useState('');
+    const [end_date, set_end_date] = useState('');
+    const [end_time, set_end_time] = useState('');
+    const [query_count_A, set_query_count_A] = useState(null);
+    const [query_count_B, set_query_count_B] = useState(null);
+    const [error, setError] = useState('');
+
     
     ///////////////  STYLING VARIABLES  ///////////////
 
@@ -129,17 +140,25 @@ function App() {
                 set_state_counter(true);
                 set_state_bar(false);
                 set_state_line(false);
+                set_state_query(false);
                 break;
             case 'option2':
                 set_state_counter(false);
                 set_state_bar(true);
                 set_state_line(false);
+                set_state_query(false);
                 break;
             case 'option3':
                 set_state_counter(false);
                 set_state_bar(false);
                 set_state_line(true);
+                set_state_query(false);
                 break;
+            case 'option4':
+                set_state_counter(false);
+                set_state_bar(false);
+                set_state_line(false);
+                set_state_query(true);
             default:
                 break;
         }
@@ -163,6 +182,46 @@ function App() {
                 }
             ],
         };
+    }
+
+    // arrow function: handle_form
+    const handle_form = async (e) => {
+
+        // error handling
+        e.preventDefault();
+        setError('');
+
+        // make a POST request to the backend with the appropriate information
+        try {
+            const response = await fetch('/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    start_date,
+                    start_time,
+                    end_date,
+                    end_time
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response error!');
+            }
+
+            const data = await response.json();
+
+            // save the results
+            set_query_count_A(data.query_count_A);
+            set_query_count_B(data.query_count_B);
+
+        }
+        
+        catch (error) {
+            setError('Error fetching data from the server.');
+            console.error(error);
+        }
     }
 
     ///////////////  useEffect Hook INSTANCES  ///////////////
@@ -280,14 +339,16 @@ function App() {
         // initial timeout to start after 5 seconds (forces graph update)
         const initialTimeout = setTimeout(() => {
 
+            console.log("Fetching inital data for timeseries plot ...")
             fetch_updated_data();
 
             // after the initial execution, set up a setInterval to repeat every 1 minute
             const interval = setInterval(() => {
 
+                console.log("Updating timeseries plot ...")
                 fetch_updated_data();
 
-            }, 60000); // 1 hour = 3600000 milliseconds
+            }, 3600000); // 1 hour = 3600000 milliseconds
 
             // turn off the timer upon return
             return () => clearInterval(interval);
@@ -314,7 +375,7 @@ function App() {
             // update the chart
             chart_reference.current.update();
         }
-    }, [var_presses_A])
+    }, [var_presses_A, state_line])
 
     // useEffect hook: update the timeseries data array for option B
     useEffect(() => {
@@ -329,7 +390,7 @@ function App() {
             chart_reference.current.update();
         }
 
-    }, [var_presses_B])
+    }, [var_presses_B, state_line])
 
     ///////////////  HTML Webpage Rendering  ///////////////
     return (
@@ -400,6 +461,16 @@ function App() {
                             />
                             &nbsp;Timeseries
                         </label>
+
+                        <label className={`btn btn-outline-primary ${selected_option === 'option4' ? 'active' : ''}`}>
+                            <input
+                                type="radio"
+                                value="option4"
+                                checked={selected_option === 'option4'}
+                                onChange={handle_radio_change}
+                            />
+                            &nbsp;Query
+                        </label>
                     </div>
                 </div>
             </div>
@@ -469,7 +540,7 @@ function App() {
 
                 <div className="mt-5">
                     
-                    <h2 className="text-center">Timeseries Plot (Presses versus Time)</h2>
+                    <h2 className="text-center">UTC Timeseries Plot (Presses versus Time)</h2>
                     
                     <div class="mt-5"></div>
                     
@@ -496,9 +567,38 @@ function App() {
                 </div>
             }
 
-    </div>
+            {state_query && 
 
-  )
+                <div className="container mt-5 p-4">
+                    <form onSubmit={handle_form}>
+                        <div className="mb-3">
+                            <label htmlFor="start_date" className="form-label">Start Date/Time:</label>
+                            <input type="date" className="form-control" id="start_date" value={start_date} onChange={(e) => set_start_date(e.target.value)} />
+                            <input type="time" className="form-control mt-2" value={start_time} onChange={(e) => set_start_time(e.target.value)} />
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="end_date" className="form-label">End Date/Time:</label>
+                            <input type="date" className="form-control" id="end_date" value={end_date} onChange={(e) => set_end_date(e.target.value)} />
+                            <input type="time" className="form-control mt-2" value={end_time} onChange={(e) => set_end_time(e.target.value)} />
+                        </div>
+                        <button type="submit" className="btn btn-primary">Submit</button>
+                    </form>
+                
+                    {query_count_A !== null && query_count_B !== null && (
+                        <div className="mt-4">
+                            <div className="alert alert-primary" role="alert">
+                                Button A has been pressed <b>{query_count_A} time(s)</b> between <b>{start_date} {start_time}</b> and <b>{end_date} {end_time}</b>
+                            </div>
+                            <div className="alert alert-primary" role="alert">
+                                Button B has been pressed <b>{query_count_B} time(s)</b> between <b>{start_date} {start_time}</b> and <b>{end_date} {end_time}</b>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            }
+
+        </div>
+    )
 }
 
 export default App;
