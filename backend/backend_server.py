@@ -20,6 +20,7 @@ import time
 # define the Flask app
 server = Flask(__name__)
 
+# connect to the Redis database
 redis_db = redis.Redis(host='redis-12305.c270.us-east-1-3.ec2.cloud.redislabs.com', port=12305, password='mJxWBQYqdbSipoLAcc59qUN1zPQdDMmD')
 
 # endpoint: total_count - return the total number of times each button has been pressed
@@ -28,14 +29,14 @@ def total_count():
 
     stream_name = 'A-stream'
 
-    #   initializations
+    # initializations
     total_presses_A = 0
     total_presses_B = 0
     
-    #   grabbing all entries in stream
+    # grabbing all entries in stream
     entries = redis_db.xrange(stream_name, '-', '+')
 
-    #   processing entries
+    # processing entries
     for entry_id, entry in entries:
         try:
             # extract the value from the entry
@@ -53,27 +54,26 @@ def total_count():
 
     return jsonify({'total_presses_A':int(total_presses_A), 'total_presses_B':int(total_presses_B)})
 
-
+# endpoint: variable_count - return the total number of times each button has been pressed in the last hour
 @server.route('/variable_count', methods=['GET'])
 def variable_count():
 
     stream_name = 'A-stream'
 
-    #   time conversion preparation for future use of xrange
+    # time conversion preparation for future use of xrange
     current_time = int(time.time() * 1000)                      # converting current time to ms
     desired_hours = 1                                           # specify hours (we chose to check every 1 hour)
     end_time_ms = desired_hours * 60 * 60 * 1000                # converting desired hours to ms
     end_time = current_time - end_time_ms                       # final end time
 
-    #   initializations
+    # initializations
     count_a = 0
     count_b = 0
 
     # print("Current time:", current_time)
     # print("Desired end time:", end_time)
 
-
-    #   grab entries within the time range
+    # grab entries within the time range
     entries = redis_db.xrange(stream_name, end_time, current_time)
     # print("Entries in the last hour:", entries)
 
@@ -100,6 +100,64 @@ def variable_count():
             ]
         }
     )
+
+# endpoint: initialize_count - return the total number of times each button has been pressed in the last nine hours
+@server.route('/initialize_count', methods=['GET'])
+def initialize_count():
+
+    stream_name = 'A-stream'
+
+    # time conversion preparation for future use of xrange
+    current_time = int(time.time() * 1000)                      # converting current time to ms
+    desired_hours = 1                                           # specify hours (we chose to check every 1 hour)
+    end_time_ms = desired_hours * 60 * 60 * 1000                # converting desired hours to ms
+    end_time = current_time - end_time_ms                       # final end time
+
+    # initializations
+    count_a = [0]*10
+    count_b = [0]*10
+
+    # create an array of timestamps for the last 10 hours
+    desired_history = 10
+    end_times = []
+    for i in range(0, desired_history):
+        end_times.append(current_time - ((i+1) * 60 * 60 * 1000))
+    
+    # print("Current date:", datetime.fromtimestamp(current_time/1000))
+    # print("Desired end date:", datetime.fromtimestamp(end_time/1000))
+
+    # grab entries for each specified time range
+    entries_across_range = []
+    for end_time in end_times:
+        entries_across_range.append(redis_db.xrange(stream_name, end_time, current_time))
+        current_time = end_time
+
+    # for each hour-long interval, count the total number of button presses
+    for i,entries in enumerate(entries_across_range):
+        for entry_id, entry_data in entries:
+            button_press = entry_data[b'button'].decode()
+
+            print("Entry ID:", entry_id.decode())
+            print("Entry data:", entry_data)
+        
+            # increment counts based on the value
+            if button_press == 'A':
+                count_a[i] += 1
+            elif button_press == 'B':
+                count_b[i] += 1
+
+    # format the data using JSON so that the frontend can understand it
+    return_dictionary = {'var_presses_A':[], 'var_presses_B':[]}
+    end_times.pop()
+    end_times.reverse()
+    #end_times.append(int(time.time() * 1000) )
+    count_a.reverse()
+    count_b.reverse()
+    for t,ca,cb in zip(end_times,count_a,count_b):
+        return_dictionary['var_presses_A'].append({'timestamp':datetime.fromtimestamp(t/1000).isoformat(sep='T', timespec='seconds'), 'count':int(ca)})
+        return_dictionary['var_presses_B'].append({'timestamp':datetime.fromtimestamp(t/1000).isoformat(sep='T', timespec='seconds'), 'count':int(cb)})
+
+    return jsonify(return_dictionary)
 
 if __name__ == '__main__':
     server.run(host='0.0.0.0', debug=True)

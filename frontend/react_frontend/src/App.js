@@ -148,9 +148,12 @@ function App() {
     // arrow function: format_timeseries_data
     const format_timeseries_data = (data) => {
 
+        // get the local timezone (UTC for now)
+        const localTimezone = moment.tz.guess();
+
         // return the formatted timeseries data
         return {
-            labels: data.map(entry => moment(entry.timestamp).format('MMM D, YYYY, h:mm:ss A')),
+            labels: data.map(entry => moment(entry.timestamp).tz(localTimezone).format('MMM D, YYYY, h:mm:ss A')),
             datasets: [
                 {
                     label: 'Presses',
@@ -163,6 +166,37 @@ function App() {
     }
 
     ///////////////  useEffect Hook INSTANCES  ///////////////
+
+    // useEffect hook: initialize the timeseries graph for the last 10 hours (fires once)
+    useEffect(() => {
+
+        // arrow function: fetch_updated_data
+        const fetch_updated_data = async () => {
+
+            // try to retrieve data from the backend
+            try {
+
+                const response = await fetch('/initialize_count');
+
+                if (!response.ok) {
+                    throw new Error('Network response error!');
+                }
+
+                // parse the JSON data from the response
+                const { var_presses_A, var_presses_B } = await response.json();
+
+                // fetch the last 9 data points (9 hours)
+                set_var_presses_A(prevDataA => [...prevDataA, ...var_presses_A]);
+                set_var_presses_B(prevDataB => [...prevDataB, ...var_presses_B]);
+            }
+        
+            catch (error) {
+                console.error('[ERROR] Fetching data failed:', error.message);
+            }
+        }
+
+        fetch_updated_data();
+    }, [])
 
     // useEffect hook: poll for total count updates (conditionally ON)
     useEffect(() => {
@@ -215,7 +249,7 @@ function App() {
     
     }, [state_line])
 
-    // useEffect hook: poll for timeseries updates (always ON)
+    // useEffect hook: poll for variable counts every hour (always ON)
     useEffect(() => {
 
         // arrow function: fetch_updated_data
@@ -237,21 +271,33 @@ function App() {
                 set_var_presses_A(prevDataA => [...prevDataA, ...var_presses_A].slice(-10));
                 set_var_presses_B(prevDataB => [...prevDataB, ...var_presses_B].slice(-10));
             }
-            
+
             catch (error) {
                 console.error('There was a problem fetching the data:', error.message);
             }
         }
 
-        // call the function to fetch data (upon timer expiration)
-        fetch_updated_data();
+        // initial timeout to start after 5 seconds (forces graph update)
+        const initialTimeout = setTimeout(() => {
 
-        // set the polling interval to 1 hour
-        const timer_period = setInterval(fetch_updated_data, 2000);
+            fetch_updated_data();
+
+            // after the initial execution, set up a setInterval to repeat every 1 minute
+            const interval = setInterval(() => {
+
+                fetch_updated_data();
+
+            }, 60000); // 1 hour = 3600000 milliseconds
+
+            // turn off the timer upon return
+            return () => clearInterval(interval);
+
+        }, 5000); // 1000 milliseconds = 1 second
 
         // turn off the timer upon return
-        return () => clearInterval(timer_period);
-    }, [])
+        return () => clearTimeout(initialTimeout);
+
+    }, []);
 
     // useEffect hook: update the timeseries data array for the x-axis and option A
     useEffect(() => {
